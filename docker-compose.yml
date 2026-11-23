@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: consentvault
+      POSTGRES_PASSWORD: consentvault
+      POSTGRES_DB: consentvault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U consentvault -d consentvault"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://consentvault:consentvault@postgres:5432/consentvault
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-at-least-32-characters-long!!}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DSR_SLA_DAYS: "30"
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
